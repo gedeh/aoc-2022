@@ -4,14 +4,21 @@ import scala.io.Source
 val filename = "/Users/hendra.saputra/dev/bolo/aoc2022/Day02.txt"
 val source = Source.fromFile(filename)
 
+val RockValue: String = "A"
+val PaperValue: String = "B"
+val ScissorValue: String = "C"
+
 trait ShapeType extends Comparable[ShapeType] {
   val value: String
+  val lost: String
+  val draw: String
+  val win: String
 
   def score: Int = {
     value match {
-      case "A" => 1
-      case "B" => 2
-      case "C" => 3
+      case RockValue => 1
+      case PaperValue => 2
+      case ScissorValue => 3
       case "X" => 1
       case "Y" => 2
       case "Z" => 3
@@ -31,9 +38,21 @@ trait ShapeType extends Comparable[ShapeType] {
   }
 }
 
-trait RockTrait extends ShapeType
-trait PaperTrait extends ShapeType
-trait ScissorTrait extends ShapeType
+trait RockTrait extends ShapeType {
+  override val draw = RockValue
+  override val lost = PaperValue
+  override val win = ScissorValue
+}
+trait PaperTrait extends ShapeType{
+  override val draw = PaperValue
+  override val lost = ScissorValue
+  override val win = RockValue
+}
+trait ScissorTrait extends ShapeType{
+  override val draw = ScissorValue
+  override val lost = RockValue
+  override val win = PaperValue
+}
 
 case class Rock(override val value: String) extends RockTrait {
   override def compareTo(o: ShapeType): Int = {
@@ -67,25 +86,32 @@ case class Scissor(override val value: String) extends ScissorTrait {
 
 object ShapeType {
   def apply(value: String): ShapeType = value.toUpperCase().trim match {
-    case "A" => Rock(value)
-    case "B" => Paper(value)
-    case "C" => Scissor(value)
+    case RockValue => Rock(value)
+    case PaperValue => Paper(value)
+    case ScissorValue => Scissor(value)
     case "X" => Rock(value)
     case "Y" => Paper(value)
     case "Z" => Scissor(value)
     case _ => throw new IllegalArgumentException(s"Unknown value $value")
+  }
+
+  def pickShape(them: ShapeType, outcome: String): ShapeType = outcome.toUpperCase().trim match {
+    case "X" => ShapeType(them.win)   // Mine lost
+    case "Y" => ShapeType(them.draw)  // draw
+    case "Z" => ShapeType(them.lost)  // Mine win
   }
 }
 
 val scores = mutable.ListBuffer.empty[Int]
 for (line <- source.getLines) {
   line match {
-    case s"$left $right" =>
+    case s"$left $outcome" =>
       val them = ShapeType(left)
-      val mine = ShapeType(right)
+      val mine = ShapeType.pickShape(them, outcome)
       val score = mine.scoreAgainst(them)
       scores.addOne(score)
-      println(s"${mine.describeScore(them)}: $them vs $mine")
+
+      println(s"$outcome ${mine.describeScore(them)}: $them vs $mine")
     case _ =>
       println(s"Unable to parse $line")
   }
